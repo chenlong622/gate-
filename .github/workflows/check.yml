@@ -1,9 +1,8 @@
-name: VPN Gate Node Check
+name: VPN 网关节点检查
 
 on:
- schedule:
-    - cron: "0 */12 * * *
-  workflow_dispatch:
+  schedule:
+    - cron: "0 */12 * * *"
   workflow_dispatch:
 
 permissions:
@@ -12,7 +11,7 @@ permissions:
   id-token: write
 
 concurrency:
-  group: gate-check
+  group: "gate-check"
   cancel-in-progress: false
 
 jobs:
@@ -20,7 +19,7 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 30
     steps:
-      - name: Checkout
+      - name: checkout
         uses: actions/checkout@v4
 
       - name: Setup Python
@@ -31,28 +30,28 @@ jobs:
       - name: Install dependencies
         run: pip install -r requirements.txt
 
-      - name: Get VPN Gate nodes + check via Cloudflare Worker + build page
+      - name: Fetch VPN Gate nodes + Check via Cloudflare Worker + Build page
         run: python vpngate.py
         env:
-          # 已部署的检测 Worker (不要改动: 检测统一走这里)
-          CHECK_WORKER: "${{ secrets.DOMAIN }}"
+          # 已部署的检测Worker (不要配置:检测统一走这里)
+          CHECK_WORKER: ${{ secrets.DOMAIN }}
           CHECK_CONCURRENCY: "32"
-          CHECK_TIMEOUT: "90"
+          CHECK_TIMEOUT: 90
 
-      - name: Ensure GitHub Pages is enabled (one-time auto setup)
+      - name: Ensure GitHub Pages enabled (one‑time auto setup)
         run: |
           code=$(curl -s -o /dev/null -w '%{http_code}' \
-            -H "Authorization: Bearer $GITHUB_TOKEN" \
+            -H "Authorization: token $GITHUB_TOKEN" \
             "https://api.github.com/repos/$GITHUB_REPOSITORY/pages")
           echo "Pages API status: $code"
           if [ "$code" = "404" ]; then
-            echo "首次运行: 启用 GitHub Pages (source = GitHub Actions, 目录 /public)"
+            echo "First run: enable GitHub Pages (source = GitHub Actions, folder /public)"
             curl -sS -X PUT \
-              -H "Authorization: Bearer $GITHUB_TOKEN" \
+              -H "Authorization: token $GITHUB_TOKEN" \
               -H "Content-Type: application/json" \
               -d '{"build_type":"workflow","source":{"branches":["main"],"path":"/public"}}' \
               "https://api.github.com/repos/$GITHUB_REPOSITORY/pages"
-            echo
+            echo ""
             sleep 10
           fi
         env:
@@ -71,4 +70,4 @@ jobs:
         uses: actions/deploy-pages@v4
 
       - name: Show site URL
-        run: 'echo "site: https://仓库用户名.github.io/gate/ (deploy outcome: ${{ steps.deployment.outcome }})"'
+        run: echo "site: https://${{ github.repository_owner }}.github.io/${{ github.event.repository.name }}/ (deploy result: ${{ steps.deployment.outcome }})"
