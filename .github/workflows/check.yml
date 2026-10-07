@@ -55,7 +55,7 @@ jobs:
             sleep 10
           fi
         env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GITHUB_TOKEN: ${{ github.TOKEN }}
 
       - name: Configure Pages
         uses: actions/configure-pages@v5
